@@ -6,7 +6,6 @@
     <title>Namus - Video & PDF Tools</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     
-    <!-- ================= TAMPILAN (CSS) ================= -->
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         body {
@@ -45,7 +44,7 @@
         h1 { color: #f1faee; margin-bottom: 5px; font-size: 2.2rem; font-weight: 600; }
         p { color: #f1faee; margin-bottom: 25px; font-size: 0.9rem; opacity: 0.9; }
 
-        /* Sistem Tab Menu */
+        /* Tab Menu */
         .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; }
         .tab-btn {
             background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3);
@@ -115,9 +114,9 @@
 
         <!-- FITUR 1: VIDEO DOWNLOADER -->
         <div id="videoSection">
-            <p>Unduh video dari TikTok, FB, IG tanpa watermark.</p>
+            <p>Unduh video TikTok tanpa tanda air (watermark).</p>
             <div class="input-group">
-                <input type="text" id="videoUrl" placeholder="Tempel tautan video di sini...">
+                <input type="text" id="videoUrl" placeholder="Tempel tautan video TikTok di sini...">
                 <button class="action-btn" onclick="processVideo()" id="videoBtn">Proses Video</button>
             </div>
             
@@ -145,13 +144,8 @@
 
     </div>
 
-    <!-- ================= LOGIKA (JAVASCRIPT) ================= -->
     <script>
-        // MASUKKAN KUNCI API ANDA DI SINI
-        const RAPIDAPI_KEY = 'KODE_RAPIDAPI_ANDA_DI_SINI'; 
-        const CONVERTAPI_SECRET = 'KODE_CONVERTAPI_ANDA_DI_SINI'; 
-
-        // Fungsi Ganti Tab Menu
+        // Switch Tab
         function switchTab(tab) {
             document.getElementById('videoSection').classList.add('hidden');
             document.getElementById('pdfSection').classList.add('hidden');
@@ -167,9 +161,9 @@
             }
         }
 
-        // FUNGSI UNDUH VIDEO (Dengan Sistem Ganda/Fallback)
+        // FUNGSI UNDUH VIDEO (API GRATIS 100% TANPA KUNCI)
         async function processVideo() {
-            const urlInput = document.getElementById('videoUrl').value;
+            const urlInput = document.getElementById('videoUrl').value.trim();
             const loading = document.getElementById('videoLoading');
             const resultDiv = document.getElementById('videoResult');
             const btn = document.getElementById('videoBtn');
@@ -181,36 +175,25 @@
             btn.disabled = true;
 
             try {
-                const res = await fetch(`https://social-media-video-downloader.p.rapidapi.com/smvd/get/all?url=${encodeURIComponent(urlInput)}`, {
-                    headers: { 
-                        'X-RapidAPI-Key': RAPIDAPI_KEY, 
-                        'X-RapidAPI-Host': 'social-media-video-downloader.p.rapidapi.com' 
-                    }
-                });
-                
+                // Menggunakan API publik gratis
+                const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(urlInput)}`);
                 const data = await res.json();
                 
-                if (data && (data.links || data.url || data.result)) {
-                    let dlUrl = data.url || (data.links && data.links[0]?.link);
-                    if (data.links) {
-                        const hd = data.links.find(l => l.quality === 'HD' || l.quality === 'no_watermark');
-                        if (hd) dlUrl = hd.link;
-                    }
+                if (data && data.data && data.data.play) {
+                    const dlUrl = data.data.play;
+                    const title = data.data.title || "Video Berhasil Ditemukan";
 
                     resultDiv.innerHTML = `
                         <h3>Video Ditemukan! 🎉</h3>
-                        <p style="color:#fff; font-size:0.8rem; margin-bottom:15px;">Jika tombol hijau tidak langsung mengunduh, klik tombol biru.</p>
-                        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-                            <button onclick="forceDownload('${dlUrl}')" class="download-link" style="border:none; cursor:pointer;">⬇ Unduh Langsung</button>
-                            <a href="${dlUrl}" target="_blank" rel="noopener noreferrer" class="download-link" style="background:#3b82f6;">↗ Buka Video</a>
-                        </div>
+                        <p style="color:#fff; font-size:0.85rem; margin-bottom:15px;">${title.substring(0, 40)}...</p>
+                        <a href="${dlUrl}" target="_blank" class="download-link" download="video.mp4">⬇ Unduh Video Sekarang</a>
                     `;
                     resultDiv.classList.remove('hidden');
                 } else {
-                    alert("Gagal memproses video. Pastikan tautannya publik.");
+                    alert("Gagal memproses video. Pastikan tautan video TikTok benar dan publik.");
                 }
             } catch (err) {
-                alert("Terjadi kesalahan sistem atau API Key belum diisi.");
+                alert("Terjadi gangguan koneksi server.");
                 console.error(err);
             } finally {
                 loading.classList.add('hidden'); 
@@ -218,26 +201,7 @@
             }
         }
 
-        // Paksa Unduh (Force Download Blob)
-        async function forceDownload(fileUrl) {
-            try {
-                const response = await fetch(fileUrl);
-                const blob = await response.blob();
-                const blobUrl = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = blobUrl;
-                a.download = "Namus_Video.mp4";
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                URL.revokeObjectURL(blobUrl);
-            } catch (e) {
-                // Jika diblokir oleh browser seluler, buka file langsung di tab baru
-                window.open(fileUrl, '_blank');
-            }
-        }
-
-        // FUNGSI KONVERSI PDF
+        // FUNGSI KONVERSI PDF (Membutuhkan ConvertAPI Secret jika digunakan)
         async function processPDF() {
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
@@ -259,7 +223,8 @@
             formData.append('File', file);
 
             try {
-                const res = await fetch(`https://v2.convertapi.com/convert/${ext}/to/pdf?Secret=${CONVERTAPI_SECRET}`, {
+                // Menggunakan ConvertAPI (Bisa diganti jika punya Secret Key)
+                const res = await fetch(`https://v2.convertapi.com/convert/${ext}/to/pdf?Secret=demo`, {
                     method: 'POST',
                     body: formData
                 });
@@ -267,12 +232,10 @@
 
                 if (data.Files && data.Files[0]) {
                     const pdfUrl = data.Files[0].Url;
-                    resultDiv.innerHTML = `<h3>Konversi Berhasil! ✅</h3><a href="${pdfUrl}" target="_blank" class="download-link">⬇ Unduh PDF</a>`;
+                    resultDiv.innerHTML = `<h3>Konversi Berhasil! ✅</h3><a href="${pdfUrl}" target="_blank" class="download-link">⬇ Unduh File PDF</a>`;
                     resultDiv.classList.remove('hidden');
                 } else {
-    // Ini akan memunculkan pesan error asli dari server RapidAPI
-    alert("Error Server: " + (data.message || JSON.stringify(data)));
-}
+                    alert("Gagal mengkonversi file.");
                 }
             } catch (err) {
                 alert("Terjadi kesalahan saat mengkonversi.");
