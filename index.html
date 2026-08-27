@@ -270,7 +270,9 @@
                     resultDiv.innerHTML = `<h3>Konversi Berhasil! ✅</h3><a href="${pdfUrl}" target="_blank" class="download-link">⬇ Unduh PDF</a>`;
                     resultDiv.classList.remove('hidden');
                 } else {
-                    alert("Gagal mengkonversi file. Cek Secret Key ConvertAPI Anda.");
+    // Ini akan memunculkan pesan error asli dari server RapidAPI
+    alert("Error Server: " + (data.message || JSON.stringify(data)));
+}
                 }
             } catch (err) {
                 alert("Terjadi kesalahan saat mengkonversi.");
