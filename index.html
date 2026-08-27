@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Namus - TikTok & PDF Tools</title>
+    <title>Namus - Video & PDF Tools</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     
     <style>
@@ -92,9 +92,7 @@
         .download-link {
             display: inline-block; background: #10b981; color: white;
             text-decoration: none; padding: 12px 25px; border-radius: 30px; font-weight: 600;
-            transition: 0.3s; border: none; cursor: pointer; font-size: 1rem;
         }
-        .download-link:hover { background: #059669; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -110,21 +108,21 @@
         
         <!-- MENU TABS -->
         <div class="tabs">
-            <button class="tab-btn active" id="btnTabVideo" onclick="switchTab('video')">🎵 TikTok Downloader</button>
+            <button class="tab-btn active" id="btnTabVideo" onclick="switchTab('video')">🎬 Unduh Video</button>
             <button class="tab-btn" id="btnTabPdf" onclick="switchTab('pdf')">📄 Ubah ke PDF</button>
         </div>
 
-        <!-- FITUR 1: TIKTOK DOWNLOADER -->
+        <!-- FITUR 1: VIDEO DOWNLOADER -->
         <div id="videoSection">
             <p>Unduh video TikTok tanpa tanda air (watermark).</p>
             <div class="input-group">
-                <input type="text" id="videoUrl" placeholder="Tempel link video TikTok di sini...">
-                <button class="action-btn" onclick="processVideo()" id="videoBtn">Proses TikTok</button>
+                <input type="text" id="videoUrl" placeholder="Tempel tautan video TikTok di sini...">
+                <button class="action-btn" onclick="processVideo()" id="videoBtn">Proses Video</button>
             </div>
             
             <div id="videoLoading" class="loading-sec hidden">
                 <div class="bubble-loading"><div class="dot"></div><div class="dot dot2"></div><div class="dot dot3"></div></div>
-                <p>Mengambil video TikTok...</p>
+                <p>Mencari video...</p>
             </div>
             <div id="videoResult" class="result-box hidden"></div>
         </div>
@@ -147,6 +145,7 @@
     </div>
 
     <script>
+        // Switch Tab
         function switchTab(tab) {
             document.getElementById('videoSection').classList.add('hidden');
             document.getElementById('pdfSection').classList.add('hidden');
@@ -162,38 +161,39 @@
             }
         }
 
-        // PROSES TIKTOK
+        // FUNGSI UNDUH VIDEO (API GRATIS 100% TANPA KUNCI)
         async function processVideo() {
             const urlInput = document.getElementById('videoUrl').value.trim();
             const loading = document.getElementById('videoLoading');
             const resultDiv = document.getElementById('videoResult');
             const btn = document.getElementById('videoBtn');
 
-            if (!urlInput) return alert("Tempelkan link video TikTok terlebih dahulu!");
+            if (!urlInput) return alert("Masukkan tautan video dulu!");
 
             loading.classList.remove('hidden'); 
             resultDiv.classList.add('hidden'); 
             btn.disabled = true;
 
             try {
+                // Menggunakan API publik gratis
                 const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(urlInput)}`);
                 const data = await res.json();
                 
                 if (data && data.data && data.data.play) {
                     const dlUrl = data.data.play;
-                    const title = data.data.title || "Video TikTok";
+                    const title = data.data.title || "Video Berhasil Ditemukan";
 
                     resultDiv.innerHTML = `
-                        <h3>TikTok Ditemukan! 🎉</h3>
+                        <h3>Video Ditemukan! 🎉</h3>
                         <p style="color:#fff; font-size:0.85rem; margin-bottom:15px;">${title.substring(0, 40)}...</p>
-                        <button onclick="downloadFile('${dlUrl}')" class="download-link">⬇ Unduh Video Langsung</button>
+                        <a href="${dlUrl}" target="_blank" class="download-link" download="video.mp4">⬇ Unduh Video Sekarang</a>
                     `;
                     resultDiv.classList.remove('hidden');
                 } else {
-                    alert("Gagal memproses. Pastikan link yang ditempel adalah link video TikTok publik.");
+                    alert("Gagal memproses video. Pastikan tautan video TikTok benar dan publik.");
                 }
             } catch (err) {
-                alert("Terjadi masalah koneksi.");
+                alert("Terjadi gangguan koneksi server.");
                 console.error(err);
             } finally {
                 loading.classList.add('hidden'); 
@@ -201,26 +201,7 @@
             }
         }
 
-        // FUNGSI PAKSA UNDUH (BLOB DOWNLOADER)
-        async function downloadFile(url) {
-            try {
-                const res = await fetch(url);
-                const blob = await res.blob();
-                const blobUrl = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = blobUrl;
-                a.download = 'TikTok_Namus.mp4';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                URL.revokeObjectURL(blobUrl);
-            } catch (err) {
-                // Jika diblokir oleh browser HP, otomatis buka file di tab baru untuk disimpan manual
-                window.open(url, '_blank');
-            }
-        }
-
-        // PROSES PDF
+        // FUNGSI KONVERSI PDF (Membutuhkan ConvertAPI Secret jika digunakan)
         async function processPDF() {
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
@@ -242,6 +223,7 @@
             formData.append('File', file);
 
             try {
+                // Menggunakan ConvertAPI (Bisa diganti jika punya Secret Key)
                 const res = await fetch(`https://v2.convertapi.com/convert/${ext}/to/pdf?Secret=demo`, {
                     method: 'POST',
                     body: formData
