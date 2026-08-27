@@ -6,7 +6,7 @@
     <title>Namus - Video & PDF Tools</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     
-    <!-- ================= CSS (TAMPILAN) ================= -->
+    <!-- ================= TAMPILAN (CSS) ================= -->
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         body {
@@ -50,11 +50,11 @@
         .tab-btn {
             background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3);
             color: #f1faee; padding: 10px 20px; border-radius: 30px; cursor: pointer;
-            transition: 0.3s; font-weight: 600; box-shadow: none;
+            transition: 0.3s; font-weight: 600;
         }
         .tab-btn.active { background: #a8dadc; color: #1d3557; box-shadow: 0 5px 15px rgba(168, 218, 220, 0.4); }
 
-        /* Input & Tombol Umum */
+        /* Input & Tombol */
         .input-group { display: flex; flex-direction: column; gap: 15px; }
         input[type="text"] {
             padding: 18px 25px; border: 2px solid rgba(255, 255, 255, 0.3);
@@ -63,7 +63,6 @@
         }
         input[type="text"]::placeholder { color: rgba(241, 250, 238, 0.7); }
         
-        /* Desain Khusus Input File */
         input[type="file"] {
             padding: 15px; border: 2px dashed rgba(255, 255, 255, 0.5);
             border-radius: 20px; background: rgba(255,255,255,0.05); color: #f1faee; cursor: pointer;
@@ -114,9 +113,9 @@
             <button class="tab-btn" id="btnTabPdf" onclick="switchTab('pdf')">📄 Ubah ke PDF</button>
         </div>
 
-        <!-- ================= BAGIAN 1: VIDEO DOWNLOADER ================= -->
+        <!-- FITUR 1: VIDEO DOWNLOADER -->
         <div id="videoSection">
-            <p>Unduh video dari TikTok, FB, IG tanpa tanda air.</p>
+            <p>Unduh video dari TikTok, FB, IG tanpa watermark.</p>
             <div class="input-group">
                 <input type="text" id="videoUrl" placeholder="Tempel tautan video di sini...">
                 <button class="action-btn" onclick="processVideo()" id="videoBtn">Proses Video</button>
@@ -129,7 +128,7 @@
             <div id="videoResult" class="result-box hidden"></div>
         </div>
 
-        <!-- ================= BAGIAN 2: PDF CONVERTER ================= -->
+        <!-- FITUR 2: PDF CONVERTER -->
         <div id="pdfSection" class="hidden">
             <p>Ubah file Word (.doc/.docx) & Excel (.xls/.xlsx) menjadi PDF.</p>
             <div class="input-group">
@@ -139,20 +138,20 @@
 
             <div id="pdfLoading" class="loading-sec hidden">
                 <div class="bubble-loading"><div class="dot"></div><div class="dot dot2"></div><div class="dot dot3"></div></div>
-                <p>Sedang mengkonversi file, tunggu sebentar...</p>
+                <p>Sedang mengkonversi file...</p>
             </div>
             <div id="pdfResult" class="result-box hidden"></div>
         </div>
 
     </div>
 
-    <!-- ================= JAVASCRIPT ================= -->
+    <!-- ================= LOGIKA (JAVASCRIPT) ================= -->
     <script>
-        // KUNCI API ANDA
+        // MASUKKAN KUNCI API ANDA DI SINI
         const RAPIDAPI_KEY = 'KODE_RAPIDAPI_ANDA_DI_SINI'; 
         const CONVERTAPI_SECRET = 'KODE_CONVERTAPI_ANDA_DI_SINI'; 
 
-        // Fungsi Ganti Tab
+        // Fungsi Ganti Tab Menu
         function switchTab(tab) {
             document.getElementById('videoSection').classList.add('hidden');
             document.getElementById('pdfSection').classList.add('hidden');
@@ -168,7 +167,7 @@
             }
         }
 
-        // FUNGSI 1: UNDUH VIDEO
+        // FUNGSI UNDUH VIDEO (Dengan Sistem Ganda/Fallback)
         async function processVideo() {
             const urlInput = document.getElementById('videoUrl').value;
             const loading = document.getElementById('videoLoading');
@@ -177,32 +176,68 @@
 
             if (!urlInput) return alert("Masukkan tautan video dulu!");
 
-            loading.classList.remove('hidden'); resultDiv.classList.add('hidden'); btn.disabled = true;
+            loading.classList.remove('hidden'); 
+            resultDiv.classList.add('hidden'); 
+            btn.disabled = true;
 
             try {
                 const res = await fetch(`https://social-media-video-downloader.p.rapidapi.com/smvd/get/all?url=${encodeURIComponent(urlInput)}`, {
-                    headers: { 'X-RapidAPI-Key': RAPIDAPI_KEY, 'X-RapidAPI-Host': 'social-media-video-downloader.p.rapidapi.com' }
+                    headers: { 
+                        'X-RapidAPI-Key': RAPIDAPI_KEY, 
+                        'X-RapidAPI-Host': 'social-media-video-downloader.p.rapidapi.com' 
+                    }
                 });
+                
                 const data = await res.json();
                 
-                if (data && data.links && data.links.length > 0) {
-                    let dlUrl = data.links[0].link; 
-                    const hd = data.links.find(l => l.quality === 'HD' || l.quality === 'no_watermark');
-                    if(hd) dlUrl = hd.link;
+                if (data && (data.links || data.url || data.result)) {
+                    let dlUrl = data.url || (data.links && data.links[0]?.link);
+                    if (data.links) {
+                        const hd = data.links.find(l => l.quality === 'HD' || l.quality === 'no_watermark');
+                        if (hd) dlUrl = hd.link;
+                    }
 
-                    resultDiv.innerHTML = `<h3>Video Ditemukan! 🎉</h3><a href="${dlUrl}" target="_blank" class="download-link">⬇ Unduh Video</a>`;
+                    resultDiv.innerHTML = `
+                        <h3>Video Ditemukan! 🎉</h3>
+                        <p style="color:#fff; font-size:0.8rem; margin-bottom:15px;">Jika tombol hijau tidak langsung mengunduh, klik tombol biru.</p>
+                        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                            <button onclick="forceDownload('${dlUrl}')" class="download-link" style="border:none; cursor:pointer;">⬇ Unduh Langsung</button>
+                            <a href="${dlUrl}" target="_blank" rel="noopener noreferrer" class="download-link" style="background:#3b82f6;">↗ Buka Video</a>
+                        </div>
+                    `;
                     resultDiv.classList.remove('hidden');
                 } else {
-                    alert("Gagal memproses video.");
+                    alert("Gagal memproses video. Pastikan tautannya publik.");
                 }
             } catch (err) {
-                alert("Terjadi kesalahan sistem video.");
+                alert("Terjadi kesalahan sistem atau API Key belum diisi.");
+                console.error(err);
             } finally {
-                loading.classList.add('hidden'); btn.disabled = false;
+                loading.classList.add('hidden'); 
+                btn.disabled = false;
             }
         }
 
-        // FUNGSI 2: KONVERSI PDF
+        // Paksa Unduh (Force Download Blob)
+        async function forceDownload(fileUrl) {
+            try {
+                const response = await fetch(fileUrl);
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = "Namus_Video.mp4";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(blobUrl);
+            } catch (e) {
+                // Jika diblokir oleh browser seluler, buka file langsung di tab baru
+                window.open(fileUrl, '_blank');
+            }
+        }
+
+        // FUNGSI KONVERSI PDF
         async function processPDF() {
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
@@ -212,19 +247,18 @@
 
             if (!file) return alert("Pilih file Word atau Excel terlebih dahulu!");
 
-            // Ambil format ekstensi file (docx, xlsx, dll)
             const ext = file.name.split('.').pop().toLowerCase();
             const allowed = ['doc', 'docx', 'xls', 'xlsx'];
             if (!allowed.includes(ext)) return alert("Hanya mendukung file .doc, .docx, .xls, .xlsx");
 
-            loading.classList.remove('hidden'); resultDiv.classList.add('hidden'); btn.disabled = true;
+            loading.classList.remove('hidden'); 
+            resultDiv.classList.add('hidden'); 
+            btn.disabled = true;
 
-            // Siapkan file untuk dikirim ke API
             const formData = new FormData();
             formData.append('File', file);
 
             try {
-                // Memanggil ConvertAPI
                 const res = await fetch(`https://v2.convertapi.com/convert/${ext}/to/pdf?Secret=${CONVERTAPI_SECRET}`, {
                     method: 'POST',
                     body: formData
@@ -233,15 +267,16 @@
 
                 if (data.Files && data.Files[0]) {
                     const pdfUrl = data.Files[0].Url;
-                    resultDiv.innerHTML = `<h3>Konversi Berhasil! ✅</h3><a href="${pdfUrl}" target="_blank" class="download-link">⬇ Unduh File PDF</a>`;
+                    resultDiv.innerHTML = `<h3>Konversi Berhasil! ✅</h3><a href="${pdfUrl}" target="_blank" class="download-link">⬇ Unduh PDF</a>`;
                     resultDiv.classList.remove('hidden');
                 } else {
-                    alert("Gagal mengkonversi file. Pastikan Secret Key sudah benar.");
+                    alert("Gagal mengkonversi file. Cek Secret Key ConvertAPI Anda.");
                 }
             } catch (err) {
                 alert("Terjadi kesalahan saat mengkonversi.");
             } finally {
-                loading.classList.add('hidden'); btn.disabled = false;
+                loading.classList.add('hidden'); 
+                btn.disabled = false;
             }
         }
     </script>
