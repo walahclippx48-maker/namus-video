@@ -6,11 +6,16 @@
     <title>Namus - Video & PDF Tools</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     
+    <!-- Pustaka Pendukung untuk Konversi Word & Excel ke PDF Langsung di Browser -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         body {
             display: flex; justify-content: center; align-items: center; min-height: 100vh;
-            overflow: hidden; color: #1d3557; position: relative;
+            overflow-x: hidden; color: #1d3557; position: relative;
             background: linear-gradient(180deg, #a8dadc 0%, #1d3557 100%);
         }
 
@@ -39,7 +44,7 @@
             background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 40px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15); padding: 40px;
-            max-width: 600px; width: 90%; text-align: center;
+            max-width: 600px; width: 90%; text-align: center; margin: 20px 0;
         }
         h1 { color: #f1faee; margin-bottom: 5px; font-size: 2.2rem; font-weight: 600; }
         p { color: #f1faee; margin-bottom: 25px; font-size: 0.9rem; opacity: 0.9; }
@@ -49,7 +54,7 @@
         .tab-btn {
             background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3);
             color: #f1faee; padding: 10px 20px; border-radius: 30px; cursor: pointer;
-            transition: 0.3s; font-weight: 600;
+            transition: 0.3s; font-weight: 600; font-size: 0.9rem;
         }
         .tab-btn.active { background: #a8dadc; color: #1d3557; box-shadow: 0 5px 15px rgba(168, 218, 220, 0.4); }
 
@@ -58,7 +63,7 @@
         input[type="text"] {
             padding: 18px 25px; border: 2px solid rgba(255, 255, 255, 0.3);
             background: rgba(255, 255, 255, 0.1); color: #f1faee;
-            border-radius: 50px; outline: none; text-align: center;
+            border-radius: 50px; outline: none; text-align: center; font-size: 0.95rem;
         }
         input[type="text"]::placeholder { color: rgba(241, 250, 238, 0.7); }
         
@@ -92,7 +97,9 @@
         .download-link {
             display: inline-block; background: #10b981; color: white;
             text-decoration: none; padding: 12px 25px; border-radius: 30px; font-weight: 600;
+            transition: 0.3s; border: none; cursor: pointer; font-size: 1rem;
         }
+        .download-link:hover { background: #059669; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -108,36 +115,36 @@
         
         <!-- MENU TABS -->
         <div class="tabs">
-            <button class="tab-btn active" id="btnTabVideo" onclick="switchTab('video')">🎬 Unduh Video</button>
+            <button class="tab-btn active" id="btnTabVideo" onclick="switchTab('video')">🎬 TikTok, FB & IG</button>
             <button class="tab-btn" id="btnTabPdf" onclick="switchTab('pdf')">📄 Ubah ke PDF</button>
         </div>
 
         <!-- FITUR 1: VIDEO DOWNLOADER -->
         <div id="videoSection">
-            <p>Unduh video TikTok tanpa tanda air (watermark).</p>
+            <p>Unduh video dari TikTok (tanpa watermark), Facebook, dan Instagram.</p>
             <div class="input-group">
-                <input type="text" id="videoUrl" placeholder="Tempel tautan video TikTok di sini...">
+                <input type="text" id="videoUrl" placeholder="Tempel link TikTok, Facebook, atau Instagram...">
                 <button class="action-btn" onclick="processVideo()" id="videoBtn">Proses Video</button>
             </div>
             
             <div id="videoLoading" class="loading-sec hidden">
                 <div class="bubble-loading"><div class="dot"></div><div class="dot dot2"></div><div class="dot dot3"></div></div>
-                <p>Mencari video...</p>
+                <p>Mengambil video...</p>
             </div>
             <div id="videoResult" class="result-box hidden"></div>
         </div>
 
-        <!-- FITUR 2: PDF CONVERTER -->
+        <!-- FITUR 2: PDF CONVERTER (CLIENT-SIDE) -->
         <div id="pdfSection" class="hidden">
-            <p>Ubah file Word (.doc/.docx) & Excel (.xls/.xlsx) menjadi PDF.</p>
+            <p>Ubah file Word (.docx) & Excel (.xlsx/.xls) langsung jadi PDF!</p>
             <div class="input-group">
-                <input type="file" id="fileInput" accept=".doc,.docx,.xls,.xlsx">
+                <input type="file" id="fileInput" accept=".docx,.xls,.xlsx">
                 <button class="action-btn" onclick="processPDF()" id="pdfBtn">Ubah ke PDF</button>
             </div>
 
             <div id="pdfLoading" class="loading-sec hidden">
                 <div class="bubble-loading"><div class="dot"></div><div class="dot dot2"></div><div class="dot dot3"></div></div>
-                <p>Sedang mengkonversi file...</p>
+                <p>Sedang mengkonversi file ke PDF...</p>
             </div>
             <div id="pdfResult" class="result-box hidden"></div>
         </div>
@@ -145,7 +152,6 @@
     </div>
 
     <script>
-        // Switch Tab
         function switchTab(tab) {
             document.getElementById('videoSection').classList.add('hidden');
             document.getElementById('pdfSection').classList.add('hidden');
@@ -161,39 +167,59 @@
             }
         }
 
-        // FUNGSI UNDUH VIDEO (API GRATIS 100% TANPA KUNCI)
+        // PROSES VIDEO (TIKTOK, FB, IG)
         async function processVideo() {
             const urlInput = document.getElementById('videoUrl').value.trim();
             const loading = document.getElementById('videoLoading');
             const resultDiv = document.getElementById('videoResult');
             const btn = document.getElementById('videoBtn');
 
-            if (!urlInput) return alert("Masukkan tautan video dulu!");
+            if (!urlInput) return alert("Tempelkan link video terlebih dahulu!");
 
             loading.classList.remove('hidden'); 
             resultDiv.classList.add('hidden'); 
             btn.disabled = true;
 
             try {
-                // Menggunakan API publik gratis
-                const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(urlInput)}`);
-                const data = await res.json();
-                
-                if (data && data.data && data.data.play) {
-                    const dlUrl = data.data.play;
-                    const title = data.data.title || "Video Berhasil Ditemukan";
+                let dlUrl = "";
+                let title = "Video Ditemukan!";
 
+                if (urlInput.includes("tiktok.com")) {
+                    const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(urlInput)}`);
+                    const data = await res.json();
+                    if (data && data.data && data.data.play) {
+                        dlUrl = data.data.play;
+                        title = data.data.title || "Video TikTok";
+                    }
+                } else if (urlInput.includes("instagram.com") || urlInput.includes("facebook.com") || urlInput.includes("fb.watch")) {
+                    const res = await fetch(`https://api.cobalt.tools/api/json`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ url: urlInput })
+                    });
+                    const data = await res.json();
+                    if (data && data.url) {
+                        dlUrl = data.url;
+                        title = urlInput.includes("instagram.com") ? "Video Instagram" : "Video Facebook";
+                    }
+                }
+
+                if (dlUrl) {
                     resultDiv.innerHTML = `
-                        <h3>Video Ditemukan! 🎉</h3>
-                        <p style="color:#fff; font-size:0.85rem; margin-bottom:15px;">${title.substring(0, 40)}...</p>
-                        <a href="${dlUrl}" target="_blank" class="download-link" download="video.mp4">⬇ Unduh Video Sekarang</a>
+                        <h3>${title} 🎉</h3>
+                        <p style="color:#fff; font-size:0.85rem; margin-bottom:15px;">Siap diunduh!</p>
+                        <button onclick="downloadFile('${dlUrl}')" class="download-link">⬇ Unduh Video Langsung</button>
                     `;
                     resultDiv.classList.remove('hidden');
                 } else {
-                    alert("Gagal memproses video. Pastikan tautan video TikTok benar dan publik.");
+                    alert("Gagal memproses video. Pastikan link publik dan benar (TikTok, FB, atau IG).");
                 }
+
             } catch (err) {
-                alert("Terjadi gangguan koneksi server.");
+                alert("Terjadi kendala saat menghubungkan ke server.");
                 console.error(err);
             } finally {
                 loading.classList.add('hidden'); 
@@ -201,7 +227,25 @@
             }
         }
 
-        // FUNGSI KONVERSI PDF (Membutuhkan ConvertAPI Secret jika digunakan)
+        // BLOB DOWNLOADER UNTUK VIDEO
+        async function downloadFile(url) {
+            try {
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = 'Video_Namus.mp4';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(blobUrl);
+            } catch (err) {
+                window.open(url, '_blank');
+            }
+        }
+
+        // PROSES PDF LANGSUNG DI BROWSER
         async function processPDF() {
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
@@ -209,39 +253,98 @@
             const resultDiv = document.getElementById('pdfResult');
             const btn = document.getElementById('pdfBtn');
 
-            if (!file) return alert("Pilih file Word atau Excel terlebih dahulu!");
+            if (!file) return alert("Pilih file Word (.docx) atau Excel (.xlsx/.xls) terlebih dahulu!");
 
             const ext = file.name.split('.').pop().toLowerCase();
-            const allowed = ['doc', 'docx', 'xls', 'xlsx'];
-            if (!allowed.includes(ext)) return alert("Hanya mendukung file .doc, .docx, .xls, .xlsx");
+            if (!['docx', 'xls', 'xlsx'].includes(ext)) {
+                return alert("Gunakan format .docx untuk Word, atau .xlsx/.xls untuk Excel.");
+            }
 
-            loading.classList.remove('hidden'); 
-            resultDiv.classList.add('hidden'); 
+            loading.classList.remove('hidden');
+            resultDiv.classList.add('hidden');
             btn.disabled = true;
 
-            const formData = new FormData();
-            formData.append('File', file);
+            const reader = new FileReader();
 
-            try {
-                // Menggunakan ConvertAPI (Bisa diganti jika punya Secret Key)
-                const res = await fetch(`https://v2.convertapi.com/convert/${ext}/to/pdf?Secret=demo`, {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await res.json();
-
-                if (data.Files && data.Files[0]) {
-                    const pdfUrl = data.Files[0].Url;
-                    resultDiv.innerHTML = `<h3>Konversi Berhasil! ✅</h3><a href="${pdfUrl}" target="_blank" class="download-link">⬇ Unduh File PDF</a>`;
-                    resultDiv.classList.remove('hidden');
-                } else {
-                    alert("Gagal mengkonversi file.");
-                }
-            } catch (err) {
-                alert("Terjadi kesalahan saat mengkonversi.");
-            } finally {
-                loading.classList.add('hidden'); 
+            reader.onerror = function() {
+                alert("Gagal membaca file.");
+                loading.classList.add('hidden');
                 btn.disabled = false;
+            };
+
+            if (ext === 'docx') {
+                reader.onload = async function(event) {
+                    try {
+                        const arrayBuffer = event.target.result;
+                        const result = await mammoth.convertToHtml({ arrayBuffer: arrayBuffer });
+                        const htmlContent = `
+                            <div style="padding: 20px; font-family: sans-serif; color: #000; background: #fff;">
+                                <h2 style="color: #1d3557; border-bottom: 2px solid #a8dadc; padding-bottom: 5px; margin-bottom: 15px;">Dokumen Word</h2>
+                                ${result.value}
+                            </div>
+                        `;
+                        
+                        const opt = {
+                            margin:       10,
+                            filename:     file.name.replace(/\.[^/.]+$/, "") + '.pdf',
+                            image:        { type: 'jpeg', quality: 0.98 },
+                            html2canvas:  { scale: 2 },
+                            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                        };
+
+                        await html2pdf().from(htmlContent).set(opt).save();
+
+                        resultDiv.innerHTML = `<h3>Konversi Berhasil! ✅</h3><p style="color:#fff; font-size:0.85rem; margin-bottom:10px;">File PDF telah otomatis terunduh ke perangkat Anda.</p>`;
+                        resultDiv.classList.remove('hidden');
+                    } catch (err) {
+                        alert("Gagal mengkonversi file Word: " + err.message);
+                    } finally {
+                        loading.classList.add('hidden');
+                        btn.disabled = false;
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+
+            } else {
+                // Untuk file Excel (.xlsx, .xls)
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        const htmlTable = XLSX.utils.sheet_to_html(worksheet);
+
+                        const htmlContent = `
+                            <div style="padding: 20px; font-family: sans-serif; color: #000; background: #fff; overflow-x: auto;">
+                                <h2 style="color: #1d3557; border-bottom: 2px solid #a8dadc; padding-bottom: 5px; margin-bottom: 15px;">Data Excel</h2>
+                                ${htmlTable}
+                            </div>
+                        `;
+
+                        const opt = {
+                            margin:       10,
+                            filename:     file.name.replace(/\.[^/.]+$/, "") + '.pdf',
+                            image:        { type: 'jpeg', quality: 0.98 },
+                            html2canvas:  { scale: 2 },
+                            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                        };
+
+                        html2pdf().from(htmlContent).set(opt).save().then(() => {
+                            resultDiv.innerHTML = `<h3>Konversi Berhasil! ✅</h3><p style="color:#fff; font-size:0.85rem; margin-bottom:10px;">File PDF telah otomatis terunduh ke perangkat Anda.</p>`;
+                            resultDiv.classList.remove('hidden');
+                            loading.classList.add('hidden');
+                            btn.disabled = false;
+                        }).catch(err => {
+                            throw err;
+                        });
+                    } catch (err) {
+                        alert("Gagal mengkonversi file Excel: " + err.message);
+                        loading.classList.add('hidden');
+                        btn.disabled = false;
+                    }
+                };
+                reader.readAsArrayBuffer(file);
             }
         }
     </script>
